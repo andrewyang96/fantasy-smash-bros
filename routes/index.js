@@ -1,11 +1,13 @@
 var express = require('express');
 var router = express.Router();
 
-var fs = require('fs');
-
 /* GET home page. */
 router.get('/', function (req, res) {
-	res.render('index', { title: 'Fantasy Smash Bros' });
+	res.render('index', { title: "Fantasy Smash Bros" });
+});
+
+router.get('/flairs', function (req, res) {
+	res.render('flairs', { title: "Fantasy Smash Bros Flairs" });
 });
 
 router.get('/about', function (req, res) {
@@ -22,14 +24,6 @@ router.get('/terms', function (req, res) {
 
 router.get('/contact', function (req, res) {
 	res.send({message: "Contact page not implemented yet."});
-});
-
-router.get('/flairs', function (req, res) {
-	fs.readFile("./data/flairs.json", function (err, data) {
-		if (err) throw err;
-		var json = JSON.parse(data);
-		res.send(json);
-	});
 });
 
 module.exports = router;

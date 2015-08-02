@@ -18,6 +18,7 @@
     "bootstrap": "~3.3.5",
     "x-editable": "~1.5.1",
     "firebase": "~2.2.9",
-    "absurd": "*"
+    "absurd": "*",
+    "handlebars": "~3.0.3"
   }
 }
