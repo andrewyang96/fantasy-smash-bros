@@ -4,7 +4,6 @@ $(document).ready(function () {
 		// Add period before each key
 		Object.keys(data).forEach(function (cls) {
 			data["." + cls] = data[cls];
-			console.log(cls);
 			delete data[cls];
 		});
 		absurd.add(data).compile(function (err, css) {

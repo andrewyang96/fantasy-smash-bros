@@ -6,6 +6,10 @@ router.get('/', function (req, res) {
 	res.render('index', { title: "Fantasy Smash Bros" });
 });
 
+router.get('/login', function (req, res) {
+	res.render('login', { title: "Fantasy Smash Bros Login" });
+});
+
 router.get('/flairs', function (req, res) {
 	res.render('flairs', { title: "Fantasy Smash Bros Flairs" });
 });
