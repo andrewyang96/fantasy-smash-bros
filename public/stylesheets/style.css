@@ -23,6 +23,14 @@ body {
     color: #CCFFFF;
 }
 
+.flair {
+    display: inline-block;
+    background-image: url("/images/flairs.png");
+    background-repeat: no-repeat;
+    vertical-align: middle;
+    background-color: transparent;
+}
+
 .footer {
     padding-top: 1em;
     background: #D3D3D3;
