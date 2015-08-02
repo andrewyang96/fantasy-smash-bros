@@ -12,7 +12,20 @@ router.get('/flairs', function (req, res) {
 	fs.readFile("./data/flairs.json", function (err, data) {
 		if (err) throw err;
 		var json = JSON.parse(data);
-		res.send(json);
+		if (req.query.xeditable) {
+			// Refactor json into array of objects that have value and text attrs
+			var newJSON = [];
+			Object.keys(json).forEach(function (cls) {
+				var title = json[cls].title;
+				newJSON.push({
+					value: cls,
+					text: title
+				});
+			});
+			res.send(newJSON);
+		} else {
+			res.send(json);
+		}
 	});
 });
 

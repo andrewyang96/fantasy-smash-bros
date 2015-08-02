@@ -37,43 +37,28 @@ $(document).ready(function () {
 
     // Setup x-editable radiolist for flair selection
     $("#registrationFlair").editable({
-        value: 1,
+        value: "flair-smashlogo",
         showbuttons: "bottom",
-        source: [
-            {value: 1, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/AlignCenter.gif"},
-            {value: 2, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/GreenFlag.gif"},
-            {value: 3, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Computer.gif"},
-            {value: 4, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/CD.gif"},
-            {value: 5, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Document.gif"},
-            {value: 6, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/LineGraph.gif"},
-            {value: 7, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Envelope.gif"},
-            {value: 8, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/World.gif"},
-            {value: 9, text: "http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Sheet.gif"},
-            {value: 10,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Object.gif"},
-            {value: 11,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Up.gif"},
-            {value: 12,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/YellowCircle.gif"},
-            {value: 13,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/TileCascade.gif"},
-            {value: 14,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Save.gif"},
-            {value: 15,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/MagnifyPlus.gif"},
-            {value: 16,text:"http://www.trash.net/~ffischer/admin/icons/deanJones/20x20/Inform.gif"}
-        ], // Use AJAX String URL
+        source: "/api/flairs?xeditable=1",
         display: function (value, sourceData) {
             // Manipulate x-editable link to use image
             var selected = sourceData.filter(function (item) {return item.value == value})[0];
-            var newHTML = '<img src="' + selected.text + '"/>';
+            var newHTML = '<span title="' + selected.text + '" class="flair ' + value + '"></span>';
             $(this).html(newHTML);
         }
     });
     
     // Manipulate x-editable popup to use image
     $("#registrationFlair").click(function () {
-        var labels = $(".editable-radiolist label span");
+        var labels = $(".editable-radiolist > label");
         var labelsCount = labels.length;
         for (var i = 0; i < labelsCount; i++) {
-            // TODO modify newHTML for loading sprites out of spritesheets
-            var newHTML = '<img src="' + $(labels[i]).text() + '"/>';
-            $(labels[i]).after(newHTML);
-            $(labels[i]).css({"display": "none"});
+            var value = $(labels[i]).find("input").val();
+            var span = $(labels[i]).find("span")
+            var text = span.text();
+            var newHTML = '<span title="' + text + '" class="flair ' + value + '"></span>';
+            $(labels[i]).append(newHTML);
+            span.css({"display": "none"});
         }
         // Set offset of x-editable popup to the selection offset
         var offset = $("#registrationFlair").offset();
