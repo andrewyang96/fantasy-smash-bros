@@ -113,7 +113,7 @@ body {
 }
 
 .editable-radiolist input[type="radio"] + span + .flair {
-    padding: 2px;
+    padding: 10px;
 }
 
 .editable-radiolist input[type="radio"]:checked + span + .flair {
@@ -121,5 +121,5 @@ body {
 }
 
 .editable-radiolist label {
-    margin: 8px;
+    margin: 6px;
 }
