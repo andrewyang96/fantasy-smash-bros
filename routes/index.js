@@ -14,6 +14,10 @@ router.get('/flairs', function (req, res) {
 	res.render('flairs', { title: "Fantasy Smash Bros Flairs" });
 });
 
+router.get('/calculator', function (req, res) {
+	res.render('calculator', { title: "Fantasy Smash Bros Calculator" });
+});
+
 router.get('/about', function (req, res) {
 	res.send({message: "About page not implemented yet."});
 });
