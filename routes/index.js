@@ -27,7 +27,7 @@ router.get('/contribute', function (req, res) {
 });
 
 router.get('/terms', function (req, res) {
-	res.send({message: "Terms page not implemented yet."});
+	res.render('terms', { title: "Fantasy Smash Bros Terms & Conditions" });
 });
 
 router.get('/contact', function (req, res) {
