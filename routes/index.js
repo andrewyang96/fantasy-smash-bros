@@ -19,11 +19,11 @@ router.get('/calculator', function (req, res) {
 });
 
 router.get('/about', function (req, res) {
-	res.send({message: "About page not implemented yet."});
+	res.render('about', { title: "About Fantasy Smash Bros" });
 });
 
 router.get('/contribute', function (req, res) {
-	res.send({message: "Contribute page not implemented yet."});
+	res.render('contribute', { title: "Contribute to Fantasy Smash Bros" });
 });
 
 router.get('/terms', function (req, res) {
