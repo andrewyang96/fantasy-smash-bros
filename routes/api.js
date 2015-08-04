@@ -2,7 +2,6 @@ var express = require('express');
 var router = express.Router();
 
 var fs = require('fs');
-var request = require('request');
 var Firebase = require('firebase');
 
 var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
@@ -10,16 +9,32 @@ var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
 // TODO: refactor so that this variable won't be necessary.
 var games = ["ssb64", "ssbm", "ssbb", "ssb4"];
 
-var paginate = function (obj, limit, from) {
+var paginate = function (list, limit, from) {
 	// Returns a paginated object.
+	if (list.length == 0) {
+		return { data: [] };
+	}
 	if (!limit) limit = 10;
-	if (!from) from = 0;
-
-};
-
-var sort = function (obj, sortFunc, sortOrder) {
-	// Returns an array. Assumes that key is stored in the object with attribute "id".
-	// 
+	if (!from || from < 0) {
+		from = 0;
+	} else {
+		// Idiot-proof things
+		if (from >= list.length) from = list.length - 1;
+		from -= (from % limit);
+	}
+	var data = list.slice(from, from+limit);
+	var currPage = (from / limit) + 1;
+	var numPages = Math.ceil(list.length / limit);
+	return {
+		data: data,
+		pagination: {
+			currPage: currPage,
+			numPages: numPages,
+			from: from,
+			limit: limit,
+			total: list.length
+		}
+	};
 };
 
 var sortFuncs = [
@@ -153,7 +168,9 @@ router.get('/play/:game/search', function (req, res) {
 					// TODO: fetch popularity data if applicable
 					return sortFuncs[req.query.sortType](a, b) * req.query.sortOrder;
 				});
-				res.send(filtered);
+				// Finally paginate the list
+				var paginated = paginate(filtered, 10, req.query.from);
+				res.send(paginated);
 			});
 		});
 	}
