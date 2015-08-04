@@ -5,6 +5,26 @@ var fs = require('fs');
 var Firebase = require('firebase');
 
 var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
+var refGames = ref.child("games");
+var refUsers = ref.child("users");
+
+// JS Extensions
+String.prototype.format = function () {
+    var formatted = this;
+    for (var i = 0; i < arguments.length; i++) {
+        var regexp = new RegExp('\\{' + i + '\\}', 'gi');
+        formatted = formatted.replace(regexp, arguments[i]);
+    }
+    return formatted;
+};
+
+Array.prototype.forEachDone = function(fn, scope, lastfn) {
+    for(var i = 0, c = 0, len = this.length; i < len; i++) {
+        fn.call(scope, this[i], i, this, function() { // fn should be set up as fn(num, i, arr, done)
+            ++c === len && lastfn();
+        });
+    }
+};
 
 // TODO: refactor so that this variable won't be necessary.
 var games = ["ssb64", "ssbm", "ssbb", "ssb4"];
@@ -36,6 +56,28 @@ var paginate = function (list, limit, from) {
 		}
 	};
 };
+
+var getPopularity = function (game, smasherID, absolute, callback) {
+	// TODO: implement event
+	var gameRef = refGames.child(game);
+	gameRef.child("freqs").child(smasherID).once("value", function (snapshot) {
+		var absPop = Object().keys(snapshot.val()).length;
+		if (absolute) {
+			callback(absPop);
+		} else {
+			gameRef.child("participants").once("value", function (snapshot) {
+				var numParticipants = Object().keys(snapshot.val()).length;
+				callback(absPop / numParticipants);
+			});
+		}
+	});
+};
+
+var uidExists = function (uid, callback) {
+	refUsers.child(uid).once("value", function (snapshot) {
+		callback(snapshot != null);
+	});
+}
 
 var sortFuncs = [
 	function (a, b) {
@@ -108,15 +150,54 @@ router.get('/users/:uid', function (req, res) {
 
 router.put('/play/:game/select/:uid', function (req, res) {
 	// Selects these Smashers. Limit 6.
+	if (games.indexOf(req.params.game) == -1) {
+		res.status(400).send("Game param " + req.params.game + " is not valid.");
+	} else if (!req.query.choices) {
+		res.status(400).send("Choices querystring must be specified");
+	} else if (typeof req.query.choices === "object" && req.query.choices.length > 6) {
+		res.status(400).send("Choices cannot exceed length of 6.");
+	} else {
+		// TODO: check auth
+		res.send("Selected: " + req.query.choices);
+	}
 });
 
 router.get('/play/:game/select/:uid', function (req, res) {
 	// Gets the Smashers that this player has selected.
+	if (games.indexOf(req.params.game) == -1) {
+		res.status(400).send("Game param " + req.params.game + " is not valid.");
+	} else {
+		uidExists(req.params.uid, function (exists) {
+			if (!exists) {
+				res.status(400).send("uid " + req.params.uid + " doesn't exist.");
+			} else {
+				refGames.child(req.params.game).child("choices").child(req.params.uid).once("value", function (snapshot) {
+					var choices = Object.keys(snapshot.val());
+					// TODO: Convert list of choices to player Objs
+				});
+			}
+		});
+	}
 });
 
 router.get('/play/:game/popularity', function (req, res) {
 	// Gets the entire list for popularity.
-	// If params are provided, gets the specified smasher IDs.
+	// If smasher querystring(s) are provided, gets the specified smasher IDs.
+	// If absolute querystring exists, get absolute popularity.
+	if (games.indexOf(req.params.game) == -1) {
+		res.status(400).send("Game param " + req.params.game + " is not valid.");
+	} else {
+		if (req.query.smasher) {
+			// TODO: If querystring is provided
+		} else {
+			// TODO: Get all popularities
+		}
+	}
+});
+
+router.get('/play/:game/popularity/:smasher', function (req, res) {
+	// Gets the popularity for a specified Smasher.
+	// If absolute querystring exists, get absolute popularity.
 });
 
 /* Search methods */
@@ -177,5 +258,6 @@ router.get('/play/:game/search', function (req, res) {
 });
 
 /* Scoring methods */
+// TODO: Copy scoring.js?
 
 module.exports = router;
