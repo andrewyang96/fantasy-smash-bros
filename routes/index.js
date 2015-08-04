@@ -31,7 +31,7 @@ router.get('/terms', function (req, res) {
 });
 
 router.get('/contact', function (req, res) {
-	res.send({message: "Contact page not implemented yet."});
+	res.render('contact', { title: "Contact Info" });
 });
 
 module.exports = router;
