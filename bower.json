@@ -20,6 +20,8 @@
     "firebase": "~2.2.9",
     "absurd": "*",
     "handlebars": "~3.0.3",
-    "js-cookie": "~2.0.3"
+    "js-cookie": "~2.0.3",
+    "react": "~0.13.3",
+    "react-simpletabs": "~0.6.1"
   }
 }
