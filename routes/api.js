@@ -39,7 +39,16 @@ var games = ["ssb64", "ssbm", "ssbb", "ssb4"];
 var paginate = function (list, limit, from) {
 	// Returns a paginated object.
 	if (list.length == 0) {
-		return { data: [] };
+		return {
+			data: [],
+			pagination: {
+				currPage: 0,
+				numPages: 0,
+				from: 0,
+				limit: limit,
+				total: 0
+			}
+		};
 	}
 	if (!limit) limit = 10;
 	if (!from || from < 0) {

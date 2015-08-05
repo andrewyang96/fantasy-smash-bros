@@ -60,6 +60,12 @@ var ResultTabs = React.createClass({
 });
 
 var RightCol = React.createClass({
+    mixins: [ReactFireMixin],
+    
+    componentWillMount: function () {
+        // TODO: listen to Firebase changes for uid
+    },
+
     componentDidMount: function () {
         // Add trigger to change content of RightCol depending on state of ActionTab
         $(APP).on("actionTabChange", this.onChangeActiveTab);
@@ -78,7 +84,7 @@ var RightCol = React.createClass({
             return (
             <div id="your-choices">
                 <h4>Here are your picks:</h4>
-                <SmasherList smashers={sampleData}/>
+                <SmasherList smashers={sampleData} pagination={{currPage: 0, totalPages: 0}} />
             </div>);
         } else if (this.state.activeActionTab == 2) {
             return (
@@ -111,7 +117,7 @@ var ScoreSpreadTable = React.createClass({
 });
 
 var SmasherDetail = React.createClass({
-    // TODO: Add ReactFire mixin here
+    mixins: [ReactFireMixin],
     // TODO: Prop for choose or remove button
     // TODO: Make another class without choose/remove btn
     componentWillMount: function () {
@@ -171,10 +177,11 @@ var sampleData = [
 
 var Pagination = React.createClass({
     getInitialState: function () {
-        return { currPage: 1, totalPages: 0 };
+        return { currPage: this.props.pagination.currPage, totalPages: this.props.pagination.totalPages };
     },
     
     handlePageChange: function (event, page) {
+        // TODO set onChange function
         this.setState({ currPage: page });
     },
 
@@ -201,24 +208,31 @@ var Pagination = React.createClass({
 });
 
 var SmasherList = React.createClass({
-    // TODO: Reactfire mixin here
+    // this.props.choices is a uid to listen to, can be undefined
+    mixins: [ReactFireMixin],
     // TODO: Prop for choose/remove/none button
+    getInitialState: function () {
+        return { pagination: this.props.pagination };
+    },
+
     componentWillMount: function () {
-        // TODO: Bind list of Smasher IDs to Firebase
+        if (this.props.choices) {
+            // TODO: Bind list of Smasher IDs to Firebase and include other props
+        }
     },
     
     updatePagination: function () {
         // TODO: Connect to other methods
         // Update function handles totalPages == 0 case and defines custom onPageChange function
         this.refs.pagination.update({
-            totalPages: 8,
+            totalPages: this.props.pagination.totalPages,
             visiblePages: 5,
             first: "&lt;&lt;",
             prev: "&lt;",
             next: "&gt;",
             last: "&gt;&gt;"
         });
-
+        console.log(this.props.pagination);
     },
     
     componentDidMount: function () {
@@ -232,7 +246,6 @@ var SmasherList = React.createClass({
     propTypes: {smashers: React.PropTypes.array},
     
     getInitialState: function () {
-        // TODO: Call API
         return {smashers: this.props.smashers};
     },
     
@@ -249,7 +262,7 @@ var SmasherList = React.createClass({
             <ol>
                 {this.props.smashers.map(createSmasher)}
             </ol>
-            <Pagination ref="pagination" />
+            <Pagination ref="pagination" pagination={this.props.pagination} />
         </div>);
     }
 });
@@ -264,7 +277,8 @@ var SearchArea = React.createClass({
             text: "",
             sortType: 0,
             sortOrder: 1,
-            searchResults: []
+            searchResults: [],
+            pagination: {}
         };
     },
     
@@ -287,9 +301,25 @@ var SearchArea = React.createClass({
     handleSubmit: function (e) {
         e.preventDefault();
         // Retrieve game value
-        this.setState({ game: $("#game-toggle input").val() });
+        var game = $("#game-toggle input:checked").val();
+        var searchQuery = this.state.text;
+        var sortType = this.state.sortType;
+        var sortOrder = this.state.sortOrder;
+        var url = "/api/play/" + game + "/search?searchQuery=" + escape(this.state.text) + "&sortType=" + sortType + "&sortOrder=" + sortOrder;
+        console.log(url);
         // TODO: Call Search API instead of fake data
-        this.setState({ searchResults: sampleData });
+        $.ajax({
+            url: url,
+            type: "GET",
+            success: this.updateSearchResults,
+            error: function (data) {
+                alert("Couldn't load search results!");
+            }
+        });
+    },
+
+    updateSearchResults: function (data) {
+        this.setState({ searchResults: data.data, pagination: data.pagination });
     },
     
     render: function () {
@@ -316,7 +346,7 @@ var SearchArea = React.createClass({
                     </div>
                 </div>
             </form>
-            <SmasherList smashers={this.state.searchResults} />
+            <SmasherList smashers={this.state.searchResults} pagination={this.state.pagination} />
         </div>);
     }
 });
