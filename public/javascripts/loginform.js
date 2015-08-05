@@ -70,20 +70,29 @@ $(document).ready(function () {
         $(".editable-popup").offset(offset);
     });
     
-    // Setup debug form submit
+    // On signin form submit
     $("#signin-view > form").submit(function (event) {
         event.preventDefault();
         console.log("Trying to sign in!");
         var email = $(this).find("input[name=email]").val();
         var password = $(this).find("input[name=password]").val();
         var rememberMe = $(this).find("input[name=rememberMe]").get(0).checked;
-        console.log("Email Address:", email);
-        console.log("Password:", password);
-        console.log("Remember me:", rememberMe);
+        // Authenticate here
+        ref.authWithPassword({
+            email: email,
+            password: password
+        }, function (error, authData) {
+            if (error) {
+                alert("Login failed!");
+            } else {
+                // Set authData cookie
+                Cookies.set("authData", authData);
+                // Redirect to dashboard
+                window.location.pathname = "/play";
+            }
+        });
     });
-    $("#registration-view > form").submit(function (event) {
-        // Add flair to param data
-    });
+
     $("#forgot-password-view > form").submit(function (event) {
         event.preventDefault();
         console.log("Forgot password!");

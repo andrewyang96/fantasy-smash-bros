@@ -183,7 +183,7 @@ router.post('/users', function (req, res) {
 								flair: params.flair
 							}, function () {
 								console.log("Created user: " + params.email + " with uid: " + params.uid);
-								res.redirect('/');
+								res.redirect('/login');
 							});							
 						}
 					});

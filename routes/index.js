@@ -1,13 +1,47 @@
 var express = require('express');
 var router = express.Router();
 
+var Firebase = require('firebase');
+var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
+
 /* GET home page. */
 router.get('/', function (req, res) {
 	res.render('index', { title: "Fantasy Smash Bros" });
 });
 
 router.get('/login', function (req, res) {
-	res.render('login', { title: "Fantasy Smash Bros Login" });
+	if (req.cookies.authData) {
+		var token = JSON.parse(req.cookies.authData).token;
+		ref.authWithCustomToken(token, function (error, authData) {
+			if (error) {
+				// Remove cookie
+				res.writeHead(200, { "Set-Cookie": "authData=null; expires=Thu, 01 Jan 1970 00:00:00 GMT" });
+				res.render('login', { title: "Fantasy Smash Bros Login" });
+			} else {
+				// Redirect to dashboard
+				res.redirect('/play');
+			}
+		});
+	} else {
+		res.render('login', { title: "Fantasy Smash Bros Login" });
+	}
+});
+
+router.get('/play', function (req, res) {
+	if (req.cookies.authData) {
+		var token = JSON.parse(req.cookies.authData).token;
+		ref.authWithCustomToken(token, function (error, authData) {
+			if (error) {
+				// Remove cookie
+				res.writeHead(200, { "Set-Cookie": "authData=null; expires=Thu, 01 Jan 1970 00:00:00 GMT" });
+				res.redirect('/');
+			} else {
+				res.render('play', { title: "Fantasy Smash Bros" });
+			}
+		});
+	} else {
+		res.render('play', { title: "Fantasy Smash Bros" });
+	}
 });
 
 router.get('/flairs', function (req, res) {
