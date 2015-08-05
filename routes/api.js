@@ -10,6 +10,11 @@ var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
 var refGames = ref.child("games");
 var refUsers = ref.child("users");
 
+// Authenticate with Firebase secret
+ref.authWithCustomToken(config.firebaseSecret, function () {
+	console.log("Successfully authenticated server with secret token");
+});
+
 // JS Extensions
 String.prototype.format = function () {
     var formatted = this;
@@ -151,12 +156,45 @@ router.post('/users', function (req, res) {
 	recaptcha(req, res, function (response) {
 		response = JSON.parse(response);
 		if (response.success) {
-			console.log("Signup!");
-			res.send(req.body);
+			var params = req.body;
+			// Check if all necessary params are there
+			if (params.agree && params["g-recaptcha-response"]) {
+				if (params.email && params.username && params.password && params.flair) {
+					ref.createUser({
+						email: params.email,
+						password: params.password
+					}, function (error, userData) {
+						if (error) {
+							switch(error.code) {
+								case "EMAIL_TAKEN":
+									res.status(500).send("The email " + params.email + " has already been taken.");
+									break;
+								case "INVALID_EMAIL":
+									res.status(500).send("The email " + params.email + " is not a valid email");
+									break;
+								default:
+									res.status(500).send("Error creating user account: " + error);
+							}
+						} else {
+							var uid = userData.uid;
+							refUsers.child(uid).set({
+								email: params.email,
+								username: params.username,
+								flair: params.flair
+							}, function () {
+								console.log("Created user: " + params.email + " with uid: " + params.uid);
+								res.redirect('/');
+							});							
+						}
+					});
+				}
+			} else {
+				res.status(400).send("POST request must include agree checkbox and recaptcha response. Press the ack button to try again.");
+			}
 		} else {
 			var errorCodes = response["error-codes"];
 			console.log(response);
-			res.status(400).send("User registration failed. Press the back button and then refresh to try again. Error codes: " + errorCodes);
+			res.status(400).send("User registration failed. Press the back button to try again. Error codes: " + errorCodes);
 		}
 	});
 });
