@@ -44,6 +44,8 @@ $(document).ready(function () {
             // Manipulate x-editable link to use image
             var selected = sourceData.filter(function (item) {return item.value == value})[0];
             var newHTML = '<span title="' + selected.text + '" class="flair ' + value + '"></span>';
+            // Also add hidden input field
+            newHTML += '<input name="flair" value="' + value + '" style="display:none" />';
             $(this).html(newHTML);
         }
     });
@@ -80,15 +82,7 @@ $(document).ready(function () {
         console.log("Remember me:", rememberMe);
     });
     $("#registration-view > form").submit(function (event) {
-        event.preventDefault();
-        console.log("Registering new account!");
-        var email = $(this).find("input[name=email]").val();
-        var username = $(this).find("input[name=username]").val();
-        var password = $(this).find("input[name=password]").val();
-        console.log("Email Address:", email);
-        console.log("Username:", username);
-        console.log("Password:", password);
-        console.log("Flair Value:", $(this).find("#registrationFlair").data().editable.value);
+        // Add flair to param data
     });
     $("#forgot-password-view > form").submit(function (event) {
         event.preventDefault();

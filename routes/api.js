@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 
 var fs = require('fs');
+var config = require('../config');
+var request = require('request');
 var Firebase = require('firebase');
 
 var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
@@ -77,7 +79,19 @@ var uidExists = function (uid, callback) {
 	refUsers.child(uid).once("value", function (snapshot) {
 		callback(snapshot != null);
 	});
-}
+};
+
+var recaptcha = function (req, res, callback) {
+	var grRes = req.body["g-recaptcha-response"];
+	var url = "https://www.google.com/recaptcha/api/siteverify?secret=" + config.recaptchaSecret + "&response=" + grRes + "&remoteip=" + req.connection.remoteAddress;
+	request.post(url, function (err, httpResponse, body) {
+		if (err) {
+			res.status(400).send("Error in recaptcha: " + err);
+		} else {
+			callback(body);
+		}
+	});
+};
 
 var sortFuncs = [
 	function (a, b) {
@@ -134,7 +148,17 @@ router.get('/flairs', function (req, res) {
 
 router.post('/users', function (req, res) {
 	// Register a new User
-	res.send(req.params);
+	recaptcha(req, res, function (response) {
+		response = JSON.parse(response);
+		if (response.success) {
+			console.log("Signup!");
+			res.send(req.body);
+		} else {
+			var errorCodes = response["error-codes"];
+			console.log(response);
+			res.status(400).send("User registration failed. Press the back button and then refresh to try again. Error codes: " + errorCodes);
+		}
+	});
 });
 
 router.put('/users/:uid', function (req, res) {

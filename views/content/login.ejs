@@ -27,7 +27,7 @@
             
             <!-- Registration screen -->
             <div id="registration-view" style="display:none">
-                <form>
+                <form method="post" action="/api/users">
                     <div class="text-left">
                         <span class="glyphicon glyphicon-arrow-left back-btn" id="btn-cancel-registration"></span>
                     </div>
@@ -58,7 +58,7 @@
                             <label for="registrationFlair"><big>Flair Selection</big></label>
                         </div>
                         <div class="col-xs-7">
-                            <a href="#" id="registrationFlair" data-type="radiolist" data-title="Select Flair" class=" pull-left"></a>
+                            <a href="#" id="registrationFlair" data-type="radiolist" data-name="flair" data-title="Select Flair" class="pull-left"></a>
                         </div>
                     </div>
 
@@ -68,7 +68,7 @@
                         </label>
                     </div>
                     
-                    <!-- TODO recaptcha -->
+                    <div class="g-recaptcha" data-sitekey="6Lf2SgoTAAAAAPVi-VwvyjRgfLx5xz_9okNQll0j"></div>
                     
                     <div class="form-group">
                         <button class="btn btn-lg btn-primary btn-block login-btn" type="submit">Create Account</button>
@@ -90,8 +90,6 @@
                         <label for="forgotEmail" class="sr-only">Your email address</label>
                         <input id="forgotEmail" name="email" class="form-control" placeholder="Your email address" required="" type="email" />
                     </div>
-                    
-                    <!-- TODO recaptcha -->
                     
                     <div class="form-group">
                         <button class="btn btn-lg btn-primary btn-block login-btn" type="submit">Recover Password</button>

@@ -29,5 +29,8 @@ node_modules
 # Bower components
 public/components
 
+# Config files
+config.js
+
 Thumbs.db
 *.pyc
