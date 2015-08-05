@@ -86,6 +86,14 @@ var uidExists = function (uid, callback) {
 	});
 };
 
+var isMatch = function (smasherObj, searchQuery) {
+	if (!searchQuery) return true;
+	// TODO: customize searchable fields
+	var regexp = new RegExp(searchQuery, "i");
+	var handleMatch = smasherObj.handle.match(regexp);
+	return Boolean(handleMatch);
+}
+
 var recaptcha = function (req, res, callback) {
 	var grRes = req.body["g-recaptcha-response"];
 	var url = "https://www.google.com/recaptcha/api/siteverify?secret=" + config.recaptchaSecret + "&response=" + grRes + "&remoteip=" + req.connection.remoteAddress;
@@ -287,7 +295,7 @@ router.get('/play/:game/players', function (req, res) {
 });
 
 router.get('/play/:game/search', function (req, res) {
-	// Must include search query and sort method and order.
+	// Must include sortType and sortOrder. searchQuery is optional.
 	// Returns a paginated object.
 	if (req.query.sortType != 0 && req.query.sortType != 1) { // TODO: extend sortType to any number of sortTypes
 		res.status(400).send("Search call must include valid sortType query (0 or 1).");
@@ -304,7 +312,9 @@ router.get('/play/:game/search', function (req, res) {
 				var smasherIDs = JSON.parse(data);
 				var filtered = [];
 				smasherIDs.forEach(function (smasherID) {
-					filtered.push(smashers[smasherID]);
+					if (isMatch(smashers[smasherID], req.query.searchQuery)) {
+						filtered.push(smashers[smasherID]);
+					}
 				});
 				// Sort filtered list
 				filtered.sort(function (a, b) {
