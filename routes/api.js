@@ -43,7 +43,7 @@ var paginate = function (list, limit, from) {
 			data: [],
 			pagination: {
 				currPage: 0,
-				numPages: 0,
+				totalPages: 0,
 				from: 0,
 				limit: limit,
 				total: 0
@@ -60,12 +60,12 @@ var paginate = function (list, limit, from) {
 	}
 	var data = list.slice(from, from+limit);
 	var currPage = (from / limit) + 1;
-	var numPages = Math.ceil(list.length / limit);
+	var totalPages = Math.ceil(list.length / limit);
 	return {
 		data: data,
 		pagination: {
 			currPage: currPage,
-			numPages: numPages,
+			totalPages: totalPages,
 			from: from,
 			limit: limit,
 			total: list.length

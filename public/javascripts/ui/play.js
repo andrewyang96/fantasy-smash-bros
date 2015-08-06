@@ -42,7 +42,7 @@ var GameToggle = React.createClass({
 
 var ResultTabs = React.createClass({
     handleBefore: function (e) {
-        console.log("Results tabs handleBefore:", e);
+        // console.log("Results tabs handleBefore:", e);
         $(APP).trigger("resultTabChange", e);
     },
     render: function () {
@@ -141,7 +141,7 @@ var SmasherDetail = React.createClass({
                         </div>
                         <div className="row">
                             <div className="col-xs-12">
-                                {smasher.location}
+                                {smasher.city}, {smasher.state}
                             </div>
                         </div>
                     </div>
@@ -177,32 +177,69 @@ var sampleData = [
 
 var Pagination = React.createClass({
     getInitialState: function () {
-        return { currPage: this.props.pagination.currPage, totalPages: this.props.pagination.totalPages };
+        return {
+            pagination: this.props.pagination,
+            prevReq: this.props.prevReq
+        };
+    },
+    
+    componentDidMount: function () {
+        this.update();
+    },
+    
+    componentDidUpdate: function () {
+        this.update();
+    },
+    
+    componentWillReceiveProps: function (newProps) {
+        if (newProps.pagination.totalPages != this.state.pagination.totalPages) {
+            // Flush buttons since totalPage changes
+            this.emptyButtons();
+        }
+        this.updateState(newProps);
+    },
+    
+    updateState: function (newState) {
+        // Used for setting new pagination
+        this.setState({
+            pagination: newState.pagination,
+            prevReq: newState.prevReq
+        });
     },
     
     handlePageChange: function (event, page) {
-        // TODO set onChange function
-        this.setState({ currPage: page });
+        var pObj = this.state.pagination;
+        pObj.currPage = page;
+        this.setState({ pagination: pObj });
+        // Clone obj
+        var retObj = $.extend({}, pObj);
+        retObj.currPage = page - 1; // API is zero-indexed, twbs-pagination is one-indexed
+        this.props.onChange(retObj, this.state.prevReq);
     },
-
-    update: function (paginationObj) {
-        // Check if totalPages == 0 or is undefined
-        if (paginationObj.totalPages) {
-            // onPageClick attr need not be defined
-            paginationObj.onPageClick = this.handlePageChange;
-            var thisEl = React.findDOMNode(this);
-            $(thisEl).twbsPagination(paginationObj);
-            this.setState({ totalPages: paginationObj.totalPages });
-        } else {
-            this.setState({ currPage: 0, totalPages: 0 });
-            $(thisEl).html("");
+    
+    emptyButtons: function () {
+        var pButtons = React.findDOMNode(this.refs.buttons);
+        $(pButtons).empty();
+        $(pButtons).removeData("twbs-pagination");
+        $(pButtons).unbind("page");
+    },
+    
+    update: function () {
+        var pButtons = React.findDOMNode(this.refs.buttons);
+        var totalPages = this.state.pagination.totalPages;
+        if (totalPages > 0) {
+            $(pButtons).twbsPagination({
+                totalPages: totalPages,
+                visiblePages: 3,
+                onPageClick: this.handlePageChange
+            });
         }
     },
 
     render: function () {
         return (<div ref={this.props.ref}>
-            <p ref={this.props.ref + "-info"} className="pagination-info">Page {this.state.currPage} of {this.state.totalPages}</p>
-            <div ref={this.props.ref + "-buttons"} className="pagination-sm text-center"></div>
+            <p ref="info" className="pagination-info">Page {this.state.pagination.currPage} of {this.state.pagination.totalPages}</p>
+            <div ref="buttons" className="pagination-sm text-center"></div>
         </div>);
     }
 });
@@ -211,46 +248,10 @@ var SmasherList = React.createClass({
     // this.props.choices is a uid to listen to, can be undefined
     mixins: [ReactFireMixin],
     // TODO: Prop for choose/remove/none button
-    getInitialState: function () {
-        return { pagination: this.props.pagination };
-    },
-
     componentWillMount: function () {
         if (this.props.choices) {
             // TODO: Bind list of Smasher IDs to Firebase and include other props
         }
-    },
-    
-    updatePagination: function () {
-        // TODO: Connect to other methods
-        // Update function handles totalPages == 0 case and defines custom onPageChange function
-        this.refs.pagination.update({
-            totalPages: this.props.pagination.totalPages,
-            visiblePages: 5,
-            first: "&lt;&lt;",
-            prev: "&lt;",
-            next: "&gt;",
-            last: "&gt;&gt;"
-        });
-        console.log(this.props.pagination);
-    },
-    
-    componentDidMount: function () {
-        this.updatePagination();
-    },
-    
-    componentDidUpdate: function () {
-        this.updatePagination();
-    },
-    
-    propTypes: {smashers: React.PropTypes.array},
-    
-    getInitialState: function () {
-        return {smashers: this.props.smashers};
-    },
-    
-    clearList: function () {
-        this.setState({smashers: []});
     },
     
     render: function () {
@@ -258,16 +259,15 @@ var SmasherList = React.createClass({
             return (<SmasherDetail key={smasher.id} smasher={smasher} />);
         };
         return (
-        <div id="search-results">
-            <ol>
-                {this.props.smashers.map(createSmasher)}
-            </ol>
-            <Pagination ref="pagination" pagination={this.props.pagination} />
-        </div>);
+        <ol id="search-results">
+            {this.props.smashers.map(createSmasher)}
+        </ol>);
     }
 });
 
 var SearchArea = React.createClass({
+    mixins: [React.addons.LinkedStateMixin],
+
     componentDidMount: function () {
         $("#game-toggle input").change(this.clearSearchResults);
     },
@@ -278,7 +278,16 @@ var SearchArea = React.createClass({
             sortType: 0,
             sortOrder: 1,
             searchResults: [],
-            pagination: {}
+            pagination: {
+                currPage: 0,
+                totalPages: 0
+            },
+            prevReq: {
+                game: "",
+                searchQuery: "",
+                sortType: 0,
+                sortOrder: 1
+            }
         };
     },
     
@@ -295,7 +304,19 @@ var SearchArea = React.createClass({
     },
     
     clearSearchResults: function (e) {
-        this.setState({ searchResults: [] });
+        this.setState({
+            searchResults: [],
+            pagination: {
+                currPage: 0,
+                totalPages: 0
+            },
+            prevReq: {
+                game: "",
+                searchQuery: "",
+                sortType: this.state.prevReq.sortType,
+                sortOrder: this.state.prevReq.sortOrder
+            }
+        });
     },
     
     handleSubmit: function (e) {
@@ -305,24 +326,49 @@ var SearchArea = React.createClass({
         var searchQuery = this.state.text;
         var sortType = this.state.sortType;
         var sortOrder = this.state.sortOrder;
-        var url = "/api/play/" + game + "/search?searchQuery=" + escape(this.state.text) + "&sortType=" + sortType + "&sortOrder=" + sortOrder;
+        this.search(0, game, searchQuery, sortType, sortOrder);
+    },
+
+    search: function (from, game, searchQuery, sortType, sortOrder) {
+        if (!from || from < 0) from = 0;
+        var limit = 10; // HARD-CODED
+        var fromIdx = from * limit; // Convert from value from page offset to index offset
+        var url = "/api/play/" + game + "/search?searchQuery=" + escape(searchQuery) + "&sortType=" + sortType + "&sortOrder=" + sortOrder + "&from=" + fromIdx;
         console.log(url);
-        // TODO: Call Search API instead of fake data
         $.ajax({
             url: url,
             type: "GET",
-            success: this.updateSearchResults,
+            success: function (data) {
+                this.setState({
+                    searchResults: data.data,
+                    pagination: {
+                        currPage: data.pagination.currPage,
+                        totalPages: data.pagination.totalPages
+                    },
+                    prevReq: {
+                        game: game,
+                        searchQuery: searchQuery,
+                        sortType: sortType,
+                        sortOrder: sortOrder
+                    }
+                });
+            }.bind(this),
             error: function (data) {
                 alert("Couldn't load search results!");
             }
         });
     },
-
-    updateSearchResults: function (data) {
-        this.setState({ searchResults: data.data, pagination: data.pagination });
-    },
     
     render: function () {
+        var paginationLink = this.linkState("pagination");
+        var prevReqLink = this.linkState("prevReq");
+        var searchFunc = this.search; // bind appropriate function to local var
+        var handleChange = function (newP, prevReq) {
+            // newP should be an updated pagination object
+            paginationLink.requestChange(newP);
+            // Refresh list by calling search API
+            searchFunc(newP.currPage, prevReq.game, prevReq.searchQuery, prevReq.sortType, prevReq.sortOrder);
+        };
         return (
         <div className="container-fluid">
             <form id="search-form" onSubmit={this.handleSubmit}>
@@ -346,7 +392,8 @@ var SearchArea = React.createClass({
                     </div>
                 </div>
             </form>
-            <SmasherList smashers={this.state.searchResults} pagination={this.state.pagination} />
+            <SmasherList smashers={this.state.searchResults} />
+            <Pagination pagination={paginationLink.value} prevReq={prevReqLink.value} onChange={handleChange} />
         </div>);
     }
 });
@@ -374,8 +421,8 @@ var ActionTabs = React.createClass({
 $(document).ready(function () {
     // First check if logged in, then...
     React.render(<GameToggle />, $("#game-toggle").get(0));
-    React.render(<RightCol />, $(".right-col").get(0));
     React.render(<ActionTabs />, $("#mid-container").get(0));
+    React.render(<RightCol />, $(".right-col").get(0));
     
     /*
     $(APP).on("resultTabChange", function (e, tab) {
