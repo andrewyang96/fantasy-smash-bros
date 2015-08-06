@@ -3,5 +3,5 @@ var ref = new Firebase("https://fantasy-smash-bros.firebaseio.com/");
 
 var getAuthData = function () {
 	// Fetch the "token" cookie
-	return Cookies.get("authData");
+	return JSON.parse(Cookies.get("authData"));
 };

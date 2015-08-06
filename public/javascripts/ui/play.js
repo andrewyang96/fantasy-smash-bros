@@ -84,7 +84,7 @@ var RightCol = React.createClass({
             return (
             <div id="your-choices">
                 <h4>Here are your picks:</h4>
-                <SmasherList smashers={sampleData} pagination={{currPage: 0, totalPages: 0}} />
+                <SmasherList smashers={sampleData} />
             </div>);
         } else if (this.state.activeActionTab == 2) {
             return (
@@ -118,10 +118,41 @@ var ScoreSpreadTable = React.createClass({
 
 var SmasherDetail = React.createClass({
     mixins: [ReactFireMixin],
+
+    getInitialState: function () {
+        return {popularity: 0};
+    },
     // TODO: Prop for choose or remove button
     // TODO: Make another class without choose/remove btn
     componentWillMount: function () {
-        // TODO: Bind popularity to Firebase
+        this.initFirebaseListeners.bind(this);
+    },
+
+    initFirebaseListeners: function () {
+        // Bind Popularity to Firebase
+        this.firebaseRefFreqs = ref.child("games").child(this.props.game).child("freqs").child(this.props.smasher.id);
+        this.firebaseRefFreqs.on("value", function (snapshot) {
+            $.getJSON("/api/play/" + this.props.game + "/popularity/" + this.props.smasher.id, function (data) {
+                var pop = data.popularity;
+                this.setState({ popularity: pop });
+            }).bind(this);
+        }).bind(this);
+        this.firebaseRefParticipants = ref.child("games").child(this.props.game).child("participants");
+        this.firebaseRefParticipants.on("value", function (snapshot) {
+            $.getJSON("/api/play/" + this.props.game + "/popularity/" + this.props.smasher.id, function (data) {
+                var pop = data.popularity;
+                this.setState({ popularity: pop });
+            }).bind(this);
+        }).bind(this);
+    },
+
+    removeFirebaseListeners: function () {
+        this.firebaseRefFreqs.off();
+        this.firebaseRefParticipants.off();
+    },
+
+    componentWillUnmount: function () {
+        this.removeFirebaseListeners.bind(this);
     },
     
     propTypes: {smasher: React.PropTypes.object},
@@ -146,7 +177,7 @@ var SmasherDetail = React.createClass({
                         </div>
                     </div>
                     <div className="col-xs-4 text-center popularity">
-                        {smasher.popularity}%
+                        {this.state.popularity || 0}%
                     </div>
                     <div className="col-xs-4">
                         <div className="row">
@@ -238,25 +269,18 @@ var Pagination = React.createClass({
 
     render: function () {
         return (<div ref={this.props.ref}>
-            <p ref="info" className="pagination-info">Page {this.state.pagination.currPage} of {this.state.pagination.totalPages}</p>
+            <p ref="info" className="pagination-info text-center">Page {this.state.pagination.currPage} of {this.state.pagination.totalPages}</p>
             <div ref="buttons" className="pagination-sm text-center"></div>
         </div>);
     }
 });
 
 var SmasherList = React.createClass({
-    mixins: [ReactFireMixin],
     // TODO: Prop for choose/remove/none button
-    componentWillMount: function () {
-        if (this.props.choices) {
-            // TODO: Bind list of Smasher IDs to Firebase and include other props
-        }
-    },
-    
     render: function () {
         var createSmasher = function (smasher) {
-            return (<SmasherDetail key={smasher.id} smasher={smasher} />);
-        };
+            return (<SmasherDetail key={smasher.id} smasher={smasher} game={this.props.game} uid={this.props.uid} />);
+        }.bind(this);
         return (
         <ol id="search-results">
             {this.props.smashers.map(createSmasher)}
@@ -361,13 +385,14 @@ var SearchArea = React.createClass({
     render: function () {
         var paginationLink = this.linkState("pagination");
         var prevReqLink = this.linkState("prevReq");
-        var searchFunc = this.search; // bind appropriate function to local var
         var handleChange = function (newP, prevReq) {
             // newP should be an updated pagination object
             paginationLink.requestChange(newP);
             // Refresh list by calling search API
-            searchFunc(newP.currPage, prevReq.game, prevReq.searchQuery, prevReq.sortType, prevReq.sortOrder);
-        };
+            this.search(newP.currPage, prevReq.game, prevReq.searchQuery, prevReq.sortType, prevReq.sortOrder);
+        }.bind(this);
+        var game = $("#game-toggle input:checked").val();
+        var uid = getAuthData().uid;
         return (
         <div className="container-fluid">
             <form id="search-form" onSubmit={this.handleSubmit}>
@@ -391,7 +416,7 @@ var SearchArea = React.createClass({
                     </div>
                 </div>
             </form>
-            <SmasherList smashers={this.state.searchResults} />
+            <SmasherList smashers={this.state.searchResults} game={game} uid={uid} />
             <Pagination pagination={paginationLink.value} prevReq={prevReqLink.value} onChange={handleChange} />
         </div>);
     }
@@ -421,7 +446,7 @@ $(document).ready(function () {
     // First check if logged in, then...
     React.render(<GameToggle />, $("#game-toggle").get(0));
     React.render(<ActionTabs />, $("#mid-container").get(0));
-    React.render(<RightCol />, $(".right-col").get(0));
+    // React.render(<RightCol />, $(".right-col").get(0));
     
     /*
     $(APP).on("resultTabChange", function (e, tab) {
