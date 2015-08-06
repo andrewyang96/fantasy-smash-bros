@@ -36,6 +36,9 @@ Array.prototype.forEachDone = function(fn, scope, lastfn) {
 // TODO: refactor so that this variable won't be necessary.
 var games = ["ssb64", "ssbm", "ssbb", "ssb4"];
 
+// TODO: refactor so that specifying Unix timestamp won't be necessary.
+var DEADLINE = 1438952400000;
+
 var paginate = function (list, limit, from) {
 	// Returns a paginated object.
 	if (list.length == 0) {
@@ -110,6 +113,34 @@ var getPopularities = function (game, absolute, callback) {
 				callback(freqs);
 			});
 		}
+	});
+};
+
+var updateChoices = function (game, uid, choices, callback) {
+	// Doesn't check if within limit
+	// First normalize newChoices
+	var newChoices = [];
+	if (typeof choices === "object") {
+		newChoices = choices;
+	} else {
+		newChoices.push(choices);
+	}
+	// Then turn them into smasherID : true key-value pairs
+	var kvPairs = {};
+	newChoices.forEach(function (smasherID) {
+		kvPairs[smasherID] = true;
+	});
+	// Then push to choices and freqs branch simultaneously
+	var gameRef = refGames.child(game);
+	gameRef.child("choices").child(uid).set(kvPairs, function () {
+		newChoices.forEachDone(function (key, i, arr, done) {
+			// key == smasherID
+			gameRef.child("freqs").child(key).child(uid).set(true, function () {
+				done();
+			});
+		}, this, function () {
+			callback();
+		});
 	});
 };
 
@@ -251,7 +282,7 @@ router.get('/users/:uid', function (req, res) {
 /* Main game methods */
 // TODO: Upgrade to support multiple events
 
-router.put('/play/:game/select/:uid', function (req, res) {
+router.put('/play/:game/select/', function (req, res) {
 	// Selects these Smashers. Limit 6.
 	if (games.indexOf(req.params.game) == -1) {
 		res.status(400).send("Game param " + req.params.game + " is not valid.");
@@ -259,9 +290,29 @@ router.put('/play/:game/select/:uid', function (req, res) {
 		res.status(400).send("Choices querystring must be specified");
 	} else if (typeof req.query.choices === "object" && req.query.choices.length > 6) {
 		res.status(400).send("Choices cannot exceed length of 6.");
+	} else if (new Date().getTime > DEADLINE) {
+		res.status(500).send("The deadline has already passed");
 	} else {
-		// TODO: check auth
-		res.send("Selected: " + req.query.choices);
+		// Check auth
+		if (req.cookies.authData) {
+			ref.authWithCustomToken(token, function (error, authData) {
+				if (error) {
+					res.send({
+						status: "ERROR_AUTH",
+						message: "Your session expired. Please refresh the page."
+					});
+				} else {
+					updateChoices(req.params.game, authData.uid, req.query.choices, function () {
+						res.send({ status: "SUCCESS" });
+					});
+				}
+			});
+		} else {
+			res.send({
+				status: "ERROR_NO_TOKEN",
+				message: "Your session expired. Please refresh the page."
+			});
+		}
 	}
 });
 
@@ -275,8 +326,12 @@ router.get('/play/:game/select/:uid', function (req, res) {
 				res.status(400).send("uid " + req.params.uid + " doesn't exist.");
 			} else {
 				refGames.child(req.params.game).child("choices").child(req.params.uid).once("value", function (snapshot) {
-					var choices = Object.keys(snapshot.val());
-					// TODO: Convert list of choices to player Objs
+					var choices = Object.keys(snapshot.val()) || {};
+					res.send({
+						choices: choices,
+						uid: uid,
+						game: game
+					});
 				});
 			}
 		});
@@ -365,13 +420,25 @@ router.get('/play/:game/search', function (req, res) {
 					}
 				});
 				// Sort filtered list
-				filtered.sort(function (a, b) {
-					// TODO: fetch popularity data if applicable
-					return sortFuncs[req.query.sortType](a, b) * req.query.sortOrder;
-				});
-				// Finally paginate the list
-				var paginated = paginate(filtered, 10, req.query.from);
-				res.send(paginated);
+				var pops = {};
+				if (req.query.sortType == 1) { // TODO: popularitySortFunc index is hardcoded
+					// Fetch popData if necessary
+					getPopularities(req.params.game, true, function (popData) {
+						filtered.sort(function (a, b) {
+							return sortFuncs[1](a, b, popData) * req.query.sortOrder;
+						});
+						// Finally paginate the list
+						var paginated = paginate(filtered, 10, req.query.from);
+						res.send(paginated);
+					});
+				} else {
+					filtered.sort(function (a, b) {
+						return sortFuncs[req.query.sortType](a, b) * req.query.sortOrder;
+					});
+					// Finally paginate the list
+					var paginated = paginate(filtered, 10, req.query.from);
+					res.send(paginated);
+				}
 			});
 		});
 	}
