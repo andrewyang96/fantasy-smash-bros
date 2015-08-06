@@ -135,12 +135,12 @@ var SmasherDetail = React.createClass({
                 <div className="row">
                     <div className="col-xs-4">
                         <div className="row">
-                            <div className="col-xs-12">
+                            <div className="col-xs-12 smasher-title">
                                 {smasher.handle}
                             </div>
                         </div>
                         <div className="row">
-                            <div className="col-xs-12">
+                            <div className="col-xs-12 smasher-subtitle">
                                 {smasher.city}, {smasher.state}
                             </div>
                         </div>

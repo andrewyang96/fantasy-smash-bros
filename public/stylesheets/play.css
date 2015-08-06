@@ -104,8 +104,12 @@ ol > li:hover {
     background: #D3D3D3;
 }
 
+.smasher-subtitle {
+    font-size: 0.6em;
+}
+
 .popularity {
-    font-size: 1.75em;
+    font-size: 1.2em;
 }
 
 .collapse > table {
@@ -114,11 +118,11 @@ ol > li:hover {
 }
 
 .btn-circle {
-    width: 4vw;
-    height: 4vw;
+    width: 3vw;
+    height: 3vw;
     text-align: center;
     padding: 0.25vw 0;
-    font-size: 1.5vw;
+    font-size: 1vw;
     line-height: 1.42;
     border-radius: 2.5vw;
 }
