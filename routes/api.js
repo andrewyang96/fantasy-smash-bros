@@ -122,7 +122,7 @@ var updateChoices = function (game, uid, choices, callback) {
 	var newChoices = [];
 	if (typeof choices === "object") {
 		newChoices = choices;
-	} else {
+	} else if (choices) {
 		newChoices.push(choices);
 	}
 	// Then turn them into smasherID : true key-value pairs
@@ -130,8 +130,15 @@ var updateChoices = function (game, uid, choices, callback) {
 	newChoices.forEach(function (smasherID) {
 		kvPairs[smasherID] = true;
 	});
-	// Then push to choices and freqs branch simultaneously
+	// Update participants
 	var gameRef = refGames.child(game);
+	if (newChoices.length > 0) {
+		gameRef.child("participants").child(uid).set(true);
+	} else {
+		gameRef.child("participants").child(uid).remove();
+	}
+	gameRef.child("participants").child(uid)
+	// Finally push to choices and freqs branch simultaneously
 	gameRef.child("choices").child(uid).set(kvPairs, function () {
 		newChoices.forEachDone(function (key, i, arr, done) {
 			// key == smasherID
