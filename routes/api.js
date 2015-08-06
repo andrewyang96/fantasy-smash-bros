@@ -74,16 +74,40 @@ var paginate = function (list, limit, from) {
 };
 
 var getPopularity = function (game, smasherID, absolute, callback) {
-	// TODO: implement event
+	// TODO: implement multiple events
 	var gameRef = refGames.child(game);
 	gameRef.child("freqs").child(smasherID).once("value", function (snapshot) {
-		var absPop = Object().keys(snapshot.val()).length;
+		var absPop = snapshot.val() ? Object.keys(snapshot.val()).length : 0; // in case of snapshot.val() == null
 		if (absolute) {
 			callback(absPop);
 		} else {
 			gameRef.child("participants").once("value", function (snapshot) {
-				var numParticipants = Object().keys(snapshot.val()).length;
-				callback(absPop / numParticipants);
+				var numParticipants = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
+				callback((absPop / numParticipants) || 0); // in case of NaN: absPop = 0 && numParticipants == 0
+			});
+		}
+	});
+};
+
+var getPopularities = function (game, absolute, callback) {
+	// TODO: implement multiple events
+	var gameRef = refGames.child(game);
+	gameRef.child("freqs").once("value", function (snapshot) {
+		var freqs = snapshot.val();
+		if (!freqs) { // if null
+			callback({});
+		} else if (absolute) {
+			Object.key(freqs).forEach(function (key) {
+				freqs[key] = Object.keys(freqs[key]).length;
+			});
+			callback(freqs);
+		} else {
+			gameRef.child("participants").once("value", function (snapshot) {
+				var numParticipants = snapshot.val() ? Object.keys(snapshot.val()).length : 0;
+				Object.key(freqs).forEach(function (key) {
+					freqs[key] = Object.keys(freqs[key]).length / numParticipants;
+				});
+				callback(freqs);
 			});
 		}
 	});
@@ -261,22 +285,37 @@ router.get('/play/:game/select/:uid', function (req, res) {
 
 router.get('/play/:game/popularity', function (req, res) {
 	// Gets the entire list for popularity.
-	// If smasher querystring(s) are provided, gets the specified smasher IDs.
 	// If absolute querystring exists, get absolute popularity.
 	if (games.indexOf(req.params.game) == -1) {
 		res.status(400).send("Game param " + req.params.game + " is not valid.");
 	} else {
-		if (req.query.smasher) {
-			// TODO: If querystring is provided
-		} else {
-			// TODO: Get all popularities
-		}
+		// Get all popularities
+		getPopularities(req.params.game, req.query.absolute, function (pops) {
+			res.send({
+				popularities: pops,
+				game: req.params.game,
+				absolute: req.query.absolute
+			});
+		});
 	}
 });
 
 router.get('/play/:game/popularity/:smasher', function (req, res) {
 	// Gets the popularity for a specified Smasher.
 	// If absolute querystring exists, get absolute popularity.
+	if (games.indexOf(req.params.game) == -1) {
+		res.status(400).send("Game param " + req.params.game + " is not valid.");
+	} else {
+		// Select single Smasher
+		getPopularity(req.params.game, req.params.smasher, req.query.absolute, function (pop) {
+			res.send({
+				popularity: pop,
+				smasher: req.params.smasher,
+				game: req.params.game,
+				absolute: req.query.absolute
+			});
+		});
+	}
 });
 
 /* Search methods */

@@ -245,7 +245,6 @@ var Pagination = React.createClass({
 });
 
 var SmasherList = React.createClass({
-    // this.props.choices is a uid to listen to, can be undefined
     mixins: [ReactFireMixin],
     // TODO: Prop for choose/remove/none button
     componentWillMount: function () {
